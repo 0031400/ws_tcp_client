@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 )
@@ -14,6 +15,7 @@ func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	tcpAddr := flag.String("tcp", "127.0.0.1:3000", "the tcp listener")
 	wsAddr := flag.String("ws", "ws://127.0.0.1:3000", "the ws addr")
+	cookie := flag.String("cookie", "", "the ws cookie")
 	flag.Parse()
 	l, err := net.Listen("tcp", *tcpAddr)
 	if err != nil {
@@ -29,15 +31,15 @@ func main() {
 			continue
 		}
 		log.Printf("connect from %s\n", c.LocalAddr())
-		go handle(c, *wsAddr)
+		go handle(c, *wsAddr, *cookie)
 	}
 }
-func handle(tcpConn net.Conn, wsAddr string) {
+func handle(tcpConn net.Conn, wsAddr string, cookie string) {
 	defer func() {
 		tcpConn.Close()
 		log.Printf("disconnect from %s\n", tcpConn.LocalAddr())
 	}()
-	wsConn, _, err := websocket.DefaultDialer.Dial(wsAddr, nil)
+	wsConn, _, err := websocket.DefaultDialer.Dial(wsAddr, http.Header{"cookie": []string{cookie}})
 	if err != nil {
 		log.Println(err)
 		return
